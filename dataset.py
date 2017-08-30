@@ -32,7 +32,8 @@ def get_cifar10(batch_size=16):
     trn_pixels = trn_pixels.transpose(0, 2, 3, 1)
     tst_pixels = tst_pixels.transpose(0, 2, 3, 1)
 
-    trn_set = batch_iterator(it.cycle(zip(trn_pixels, trn_labels)), batch_size, cycle=True, batch_fn=lambda x: zip(*x))
+    # trn_set = batch_iterator(it.cycle(zip(trn_pixels, trn_labels)), batch_size, cycle=True, batch_fn=lambda x: zip(*x))
+    trn_set = (trn_pixels, np.array(trn_labels))
     tst_set = (tst_pixels, np.array(tst_labels))
 
     return trn_set, tst_set

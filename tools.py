@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+import sys
 
 def save_weights(graph, fpath):
     sess = tf.get_default_session()
@@ -43,6 +44,34 @@ def iterative_reduce(ops, inputs, args, batch_size, fn):
     results = [fn(r) for r in zip(*results)]
     return results
 
+def update_progress(progress, info):
+    """Display progress bar and user info.
+
+    Args:
+        progress (float): progress [0, 1], negative for halt, and >=1 for done.
+        info (str): a string for user provided info to be displayed.
+    """
+    barLength = 20  # bar length
+    status = ""
+    if isinstance(progress, int):
+        progress = float(progress)
+    if not isinstance(progress, float):
+        progress = 0
+        status = "error: progress var must be float. "
+    if progress < 0:
+        progress = 0
+        status = "Halt. "
+    if progress >= 1:
+        progress = 1
+        status = "Done. "
+    status = status + info
+    block = int(round(barLength*progress))
+    text = "[{0}] {1:3.1f}% {2}".format("."*block + " "*(barLength-block),
+                                        progress*100, status)
+    sys.stdout.write(text)
+    sys.stdout.write('\b'*(9 + barLength + len(status)))
+    sys.stdout.flush()
+
 class StatLogger:
     """
     file writer to record various statistics
@@ -58,10 +87,11 @@ class StatLogger:
             os.makedirs(fdir)
 
 
-    def report(self, step, **kwargs):
+    def report(self, epoch, step, **kwargs):
         import json
         with open(self.fpath, "a") as fh:
             data = {
+                "epoch": epoch,
                 "step": step
             }
             data.update(kwargs)
