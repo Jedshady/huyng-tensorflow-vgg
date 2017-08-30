@@ -3,8 +3,8 @@
 # ====================
 
 # number of gpus to use, this will be ignored if we're not using multi-gpu training
-num_gpus: 5
-num_epochs: 10
+num_gpus: 1
+num_epochs: 150
 num_samples_per_epoch: 50000
 
 # run validation every N steps
@@ -23,7 +23,7 @@ pretrained_weights: null
 # ============
 # model config
 # ============
-batch_size: 256
+batch_size: 128
 num_classes: 10
 learning_rate: 0.01
 data_dims: [32, 32, 3]

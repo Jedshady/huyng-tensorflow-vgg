@@ -25,11 +25,14 @@ config = {}
 def build_model(input_data_tensor, input_label_tensor):
     num_classes = config["num_classes"]
     weight_decay = config["weight_decay"]
-    images = tf.image.resize_images(input_data_tensor, [224, 224])
+
+    # images = tf.image.resize_images(input_data_tensor, [224, 224], method=0, align_corners=False)
+    images = input_data_tensor
+
     logits = vgg.build(images, n_classes=num_classes, training=True)
     probs = tf.nn.softmax(logits)
     loss_classify = L.loss(logits, tf.one_hot(input_label_tensor, num_classes))
-    loss_weight_decay = tf.reduce_sum(tf.pack([tf.nn.l2_loss(i) for i in tf.get_collection('variables')]))
+    loss_weight_decay = tf.reduce_sum(tf.stack([tf.nn.l2_loss(i) for i in tf.get_collection('variables')]))
     loss = loss_classify + weight_decay*loss_weight_decay
     error_top5 = L.topK_error(probs, input_label_tensor, K=5)
     error_top1 = L.topK_error(probs, input_label_tensor, K=1)
@@ -65,20 +68,23 @@ def train(trn_data_generator, vld_data=None):
         input_data_tensor = tf.placeholder(tf.float32, [None] + data_dims)
         input_label_tensor = tf.placeholder(tf.int32, [None])
         model = build_model(input_data_tensor, input_label_tensor)
-        optimizer = tf.train.AdamOptimizer(learning_rate)
-        grads = optimizer.compute_gradients(model["loss"])
-        grad_step = optimizer.apply_gradients(grads)
-        init = tf.initialize_all_variables()
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate)
+        grads_and_vars = optimizer.compute_gradients(model["loss"])
+        clipped_grads_and_vars = [(tf.clip_by_norm(grad, 1), var) for grad, var in grads_and_vars]
+        grad_step = optimizer.apply_gradients(clipped_grads_and_vars)
+        # init = tf.initialize_all_variables()
+        init = tf.global_variables_initializer()
 
 
     # ===================================
     # initialize and run training session
     # ===================================
-    log = tools.MetricsLogger(train_log_fpath)
-    config_proto = tf.ConfigProto(allow_soft_placement=True)
-    sess = tf.Session(graph=G, config=config_proto)
+    log = tools.StatLogger(train_log_fpath)
+    # config_proto = tf.ConfigProto(allow_soft_placement=True)
+    # sess = tf.Session(graph=G, config=config_proto)
+    sess = tf.Session(graph=G)
     sess.run(init)
-    tf.train.start_queue_runners(sess=sess)
+    # tf.train.start_queue_runners(sess=sess)
     with sess.as_default():
         if pretrained_weights:
             print("-- loading weights from %s" % pretrained_weights)
@@ -86,7 +92,7 @@ def train(trn_data_generator, vld_data=None):
 
 
         # Start training loop
-        for step in range(num_steps):
+        for step in range(1, num_steps):
             batch_train = trn_data_generator.next()
             X_trn = np.array(batch_train[0])
             Y_trn = np.array(batch_train[1])
@@ -95,14 +101,16 @@ def train(trn_data_generator, vld_data=None):
             inputs = {input_data_tensor: X_trn, input_label_tensor: Y_trn}
             results = sess.run(ops, feed_dict=inputs)
             results = dict(zip(sorted(model.keys()), results[1:]))
-            print("TRN step:%-5d error_top1: %.4f, error_top5: %.4f, loss:%s" % (step,
-                                                                                 results["error_top1"],
-                                                                                 results["error_top5"],
-                                                                                 results["loss"]))
+            print("TRN step:%-5d, error_top5: %s, error_top1: %s, loss:%s" % (step,
+                                                                    results["error_top5"],
+                                                                    results["error_top1"],
+                                                                    results["loss"]))
             log.report(step=step,
                        split="TRN",
+                       probs=str(results["probs"]),
+                       labels=str(Y_trn),
                        error_top5=float(results["error_top5"]),
-                       error_top1=float(results["error_top5"]),
+                       error_top1=float(results["error_top1"]),
                        loss=float(results["loss"]))
 
             # report evaluation metrics every 10 training steps
