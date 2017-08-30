@@ -87,12 +87,11 @@ class StatLogger:
             os.makedirs(fdir)
 
 
-    def report(self, epoch, step, **kwargs):
+    def report(self, epoch, **kwargs):
         import json
         with open(self.fpath, "a") as fh:
             data = {
-                "epoch": epoch,
-                "step": step
+                "epoch": epoch
             }
             data.update(kwargs)
             fh.write(json.dumps(data) + "\n")
