@@ -56,7 +56,7 @@ def build(input_tensor, n_classes=1000, rgb_mean=None, training=True):
     net = tf.nn.dropout(net, keep_prob)
     # net = L.fully_connected(net, name="fc7", n_out=4096)
     # net = tf.nn.dropout(net, keep_prob)
-    net = L.fully_connected(net, name="fc8", n_out=n_classes)
+    net = L.fully_connected(net, name="fc7", n_out=n_classes)
     return net
 
 if __name__ == '__main__':
