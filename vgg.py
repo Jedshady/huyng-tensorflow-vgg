@@ -52,10 +52,10 @@ def build(input_tensor, n_classes=1000, rgb_mean=None, training=True):
     net = tf.reshape(net, [-1, flattened_shape], name="flatten")
 
     # fully connected
-    net = L.fully_connected(net, name="fc6", n_out=4096)
+    net = L.fully_connected(net, name="fc6", n_out=512)
     net = tf.nn.dropout(net, keep_prob)
-    net = L.fully_connected(net, name="fc7", n_out=4096)
-    net = tf.nn.dropout(net, keep_prob)
+    # net = L.fully_connected(net, name="fc7", n_out=4096)
+    # net = tf.nn.dropout(net, keep_prob)
     net = L.fully_connected(net, name="fc8", n_out=n_classes)
     return net
 
