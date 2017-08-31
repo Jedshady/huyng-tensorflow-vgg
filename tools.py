@@ -38,7 +38,7 @@ def iterative_reduce(ops, inputs, args, batch_size, fn):
     for i in range(0, N, batch_size):
         batch_start = i
         batch_end = i + batch_size
-        minibatch_args = [a[batch_start:batch_end] for a in args]
+        minibatch_args = [a[batch_start:batch_end] for a in args[0:2]] + [args[2]]
         result = sess.run(ops, dict(zip(inputs, minibatch_args)))
         results.append(result)
     results = [fn(r) for r in zip(*results)]
