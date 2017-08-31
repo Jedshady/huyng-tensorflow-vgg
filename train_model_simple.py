@@ -22,14 +22,14 @@ config = {}
 
 # customize your model here
 # =========================
-def build_model(input_data_tensor, input_label_tensor):
+def build_model(input_data_tensor, input_label_tensor, train_mode):
     num_classes = config["num_classes"]
     weight_decay = config["weight_decay"]
 
     # images = tf.image.resize_images(input_data_tensor, [224, 224], method=0, align_corners=False)
     images = input_data_tensor
 
-    logits = vgg.build(images, n_classes=num_classes, training=True)
+    logits = vgg.build(images, n_classes=num_classes, training=train_mode)
     probs = tf.nn.softmax(logits)
     loss_classify = L.loss(logits, tf.one_hot(input_label_tensor, num_classes))
     loss_weight_decay = tf.reduce_sum(tf.stack([tf.nn.l2_loss(i) for i in tf.get_collection('variables')]))
@@ -68,7 +68,8 @@ def train(trn_data, tst_data=None):
         input_data_tensor = tf.placeholder(tf.float32, [None] + data_dims)
         input_label_tensor = tf.placeholder(tf.int32, [None])
         learning_rate = tf.placeholder(tf.float32)
-        model = build_model(input_data_tensor, input_label_tensor)
+        train_mode = tf.placeholder(tf.bool)
+        model = build_model(input_data_tensor, input_label_tensor, train_mode)
         optimizer = tf.train.GradientDescentOptimizer(learning_rate)
         grads_and_vars = optimizer.compute_gradients(model["loss"])
         clipped_grads_and_vars = [(tf.clip_by_norm(grad, 1), var) for grad, var in grads_and_vars]
@@ -106,7 +107,7 @@ def train(trn_data, tst_data=None):
 
                 ops = [grad_step] + [model[k] for k in sorted(model.keys())]
                 inputs = {input_data_tensor: X_trn, input_label_tensor: Y_trn,
-                         learning_rate: lr}
+                         learning_rate: lr, train_mode: True}
                 results = sess.run(ops, feed_dict=inputs)
                 results = dict(zip(sorted(model.keys()), results[1:]))
                 total_loss += results["loss"]
@@ -131,8 +132,8 @@ def train(trn_data, tst_data=None):
             print("-- running test on test split")
             X_tst = tst_data[0]
             Y_tst = tst_data[1]
-            inputs = [input_data_tensor, input_label_tensor]
-            args = [X_tst, Y_tst]
+            inputs = [input_data_tensor, input_label_tensor, train_mode]
+            args = [X_tst, Y_tst, False]
             ops = [model[k] for k in sorted(model.keys())]
             results = tools.iterative_reduce(ops, inputs, args, batch_size=batch_size, fn=lambda x: np.mean(x, axis=0))
             results = dict(zip(sorted(model.keys()), results))
