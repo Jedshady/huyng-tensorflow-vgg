@@ -148,7 +148,7 @@ def train(trn_data, tst_data=None):
 
         if (epoch % checkpoint_iter == 0):
             print("-- saving check point")
-            tools.save_weights(G, pth.join(checkpoint_dir, "weights.%s" % step))
+            tools.save_weights(G, pth.join(checkpoint_dir, "weights.%s" % epoch))
 
 
 
