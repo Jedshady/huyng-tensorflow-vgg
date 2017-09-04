@@ -58,6 +58,7 @@ def train(trn_data, tst_data=None):
     train_log_fpath = pth.join(experiment_dir, 'train.log')
     vld_iter = config["vld_iter"]
     checkpoint_iter = config["checkpoint_iter"]
+    worker_number = config["worker_number"]
     pretrained_weights = config.get("pretrained_weights", None)
 
     # ========================
@@ -65,15 +66,19 @@ def train(trn_data, tst_data=None):
     # ========================
     G = tf.Graph()
     with G.as_default():
-        input_data_tensor = tf.placeholder(tf.float32, [None] + data_dims)
-        input_label_tensor = tf.placeholder(tf.int32, [None])
-        learning_rate = tf.placeholder(tf.float32)
-        train_mode = tf.placeholder(tf.bool)
+        input_data_tensor = tf.placeholder(tf.float32, [None] + data_dims, name='input_data_tensor')
+        input_label_tensor = tf.placeholder(tf.int32, [None], name='input_label_tensor')
+        learning_rate = tf.placeholder(tf.float32, name='lr_placeholder')
+        train_mode = tf.placeholder(tf.bool, name='train_mode_placeholder')
         model = build_model(input_data_tensor, input_label_tensor, train_mode)
+        var_list = tf.trainable_variables()
         optimizer = tf.train.GradientDescentOptimizer(learning_rate)
-        grads_and_vars = optimizer.compute_gradients(model["loss"])
-        clipped_grads_and_vars = [(tf.clip_by_norm(grad, 1), var) for grad, var in grads_and_vars]
-        grad_step = optimizer.apply_gradients(clipped_grads_and_vars)
+        # grads_and_vars = optimizer.compute_gradients(model["loss"])
+        grads = tf.gradients(model["loss"], var_list)
+        clipped_grads = [tf.clip_by_norm(grad, 1) for grad in grads]
+        aggregated_grads = [tf.placeholder(tf.float32, var.get_shape()) \
+                                    for var in var_list]
+        grad_step = optimizer.apply_gradients(zip(aggregated_grads, var_list))
         # init = tf.initialize_all_variables()
         init = tf.global_variables_initializer()
 
@@ -99,31 +104,79 @@ def train(trn_data, tst_data=None):
         for epoch in range(1, num_epochs+1):
             lr = 0.1 / float(1 << (epoch / 25))
             np.random.shuffle(idx)
-            total_loss, total_acc = 0.0, 0.0
+            total_loss, total_acc, total_acc_5 = 0.0, 0.0, 0.0
             print 'epoch %d' % epoch
             for step in range(steps_per_epoch):
                 X_trn = train_x[idx[step * batch_size: (step + 1) * batch_size]]
                 Y_trn = train_y[idx[step * batch_size: (step + 1) * batch_size]]
 
-                ops = [grad_step] + [model[k] for k in sorted(model.keys())]
-                inputs = {input_data_tensor: X_trn, input_label_tensor: Y_trn,
-                         learning_rate: lr, train_mode: True}
-                results = sess.run(ops, feed_dict=inputs)
-                results = dict(zip(sorted(model.keys()), results[1:]))
-                total_loss += results["loss"]
-                total_acc += 1 - results["error_top1"]
+                step_loss, step_acc, step_acc_5 = 0.0, 0.0, 0.0
+                grad_workers = []
+                for worker in range(worker_number):
+                    micro_batch_size = batch_size / worker_number
+                    micro_x_trn = X_trn[worker * micro_batch_size: (worker + 1) * micro_batch_size]
+                    micro_y_trn = Y_trn[worker * micro_batch_size: (worker + 1) * micro_batch_size]
+
+                    ops = [clipped_grads] + [model[k] for k in sorted(model.keys())]
+                    inputs = {input_data_tensor: micro_x_trn, input_label_tensor: micro_y_trn,
+                             learning_rate: lr, train_mode: True}
+                    results = sess.run(ops, feed_dict=inputs)
+                    grad_workers.append([grad for grad in results[0]])
+                    results = dict(zip(sorted(model.keys()), results[1:]))
+                    step_loss += results["loss"]
+                    step_acc += 1 - results["error_top1"]
+                    step_acc_5 += 1 - results["error_top5"]
+
+                #################################################
+                # Aggregate Gradients from different workers
+                #################################################
+                # grad_workers: [[(1,'t'), (2, 'tt'), (3, 'ttt')], [(4,'t'), (5, 'tt'), (6, 'ttt')],
+                #                [(7,'t'), (8, 'tt'), (9, 'ttt')]]
+                # zip(*grad_workers):[((1, 't'), (4, 't'), (7, 't')), ((2, 'tt'), (5, 'tt'), (8, 'tt')),
+                #                ((3, 'ttt'), (6, 'ttt'), (9, 'ttt'))]
+                grad_workers = [pair for pair in zip(*grad_workers)]
+                new_grad = [np.mean(np.asarray(grad), axis=0) for grad in grad_workers]
+
+                #################################################
+                # Run Gradients Updates
+                #################################################
+                grad_dict = {}
+                grad_dict[learning_rate] = lr
+                for i in range(len(aggregated_grads)):
+                    grad_dict[aggregated_grads[i]] = new_grad[i]
+                sess.run(grad_step, feed_dict=grad_dict)
+
+                avg_step_loss = step_loss / worker_number
+                avg_step_acc = step_acc / worker_number
+                avg_step_acc_5 = step_acc_5 / worker_number
+
+                total_loss += avg_step_loss
+                total_acc += avg_step_acc
+                total_acc_5 += avg_step_acc_5
+
+                ####################################
+                # Old step one worker workflow
+                ####################################
+                # ops = [grad_step] + [model[k] for k in sorted(model.keys())]
+                # inputs = {input_data_tensor: X_trn, input_label_tensor: Y_trn,
+                #          learning_rate: lr, train_mode: True}
+                # results = sess.run(ops, feed_dict=inputs)
+                # results = dict(zip(sorted(model.keys()), results[1:]))
+                # total_loss += results["loss"]
+                # total_acc += 1 - results["error_top1"]
+
                 tools.update_progress(step * 1.0 / steps_per_epoch,
-                                    'training loss = %f, accuracy = %f' % (results["loss"],
-                                                            1 - results["error_top1"]))
+                                    'training loss = %f, accuracy = %f' % (avg_step_loss,
+                                                            avg_step_acc))
 
                 log.report(epoch=epoch,
                            step=step,
                            split="TRN",
                         #    probs=str(results["probs"]),
                         #    labels=str(Y_trn),
-                           error_top1=float(results["error_top1"]),
-                           error_top5=float(results["error_top5"]),
-                           loss=float(results["loss"]))
+                           error_top1=float(avg_step_acc),
+                           error_top5=float(avg_step_acc_5),
+                           loss=float(avg_step_loss))
 
             info = '\ntraining loss = %f, training accuracy = %f, lr = %f' \
                 % (total_loss / steps_per_epoch, total_acc / steps_per_epoch, lr)
