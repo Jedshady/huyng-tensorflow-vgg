@@ -89,9 +89,11 @@ class StatLogger:
 
     def report(self, epoch, **kwargs):
         import json
+        from time import gmtime, strftime
         with open(self.fpath, "a") as fh:
             data = {
                 "epoch": epoch
             }
             data.update(kwargs)
+            fh.write('[' + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + ']' + ' ')
             fh.write(json.dumps(data) + "\n")

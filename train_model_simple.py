@@ -33,7 +33,7 @@ def build_model(input_data_tensor, input_label_tensor, train_mode):
     probs = tf.nn.softmax(logits)
     loss_classify = L.loss(logits, tf.one_hot(input_label_tensor, num_classes))
     loss_weight_decay = tf.reduce_sum(tf.stack([tf.nn.l2_loss(i) for i in tf.get_collection('variables')]))
-    loss = loss_classify + weight_decay*loss_weight_decay
+    loss = loss_classify + weight_decay * loss_weight_decay
     error_top5 = L.topK_error(probs, input_label_tensor, K=5)
     error_top1 = L.topK_error(probs, input_label_tensor, K=1)
 
@@ -135,7 +135,18 @@ def train(trn_data, tst_data=None):
                 # zip(*grad_workers):[((1, 't'), (4, 't'), (7, 't')), ((2, 'tt'), (5, 'tt'), (8, 'tt')),
                 #                ((3, 'ttt'), (6, 'ttt'), (9, 'ttt'))]
                 grad_workers = [pair for pair in zip(*grad_workers)]
-                new_grad = [np.mean(np.asarray(grad), axis=0) for grad in grad_workers]
+                new_grad = []
+                for grad in grad_workers:
+                    variance = np.var(np.asarray(grad), axis=0)
+                    avg_variance = np.mean(variance)
+                    scale = np.divide(variance, avg_variance)
+                    final_scale = np.exp(1 - scale)
+
+                    avg_grad = np.mean(np.asarray(grad), axis=0)
+                    final_grad = np.multiply(final_scale, avg_grad)
+                    new_grad.append(final_grad)
+
+                # new_grad = [np.mean(np.asarray(grad), axis=0) for grad in grad_workers]
 
                 #################################################
                 # Run Gradients Updates

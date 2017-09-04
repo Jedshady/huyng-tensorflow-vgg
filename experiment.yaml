@@ -19,7 +19,7 @@ checkpoint_dir: "exp1/checkpoints"
 # path to pre-trained weights to initialize model with before training
 pretrained_weights: null
 
-worker_number: 2
+worker_number: 4
 
 # ============
 # model config
