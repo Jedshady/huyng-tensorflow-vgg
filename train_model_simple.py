@@ -134,6 +134,8 @@ def train(trn_data, tst_data=None):
                 #                [(7,'t'), (8, 'tt'), (9, 'ttt')]]
                 # zip(*grad_workers):[((1, 't'), (4, 't'), (7, 't')), ((2, 'tt'), (5, 'tt'), (8, 'tt')),
                 #                ((3, 'ttt'), (6, 'ttt'), (9, 'ttt'))]
+                # New Aggregation Strategy:
+                # Scale = exp(1 - v_i / mean(v_i))
                 grad_workers = [pair for pair in zip(*grad_workers)]
                 new_grad = []
                 for grad in grad_workers:
@@ -211,9 +213,9 @@ def train(trn_data, tst_data=None):
                        error_top5=float(results["error_top5"]),
                        loss=float(results["loss"]))
 
-        if (epoch % checkpoint_iter == 0):
-            print("-- saving check point")
-            tools.save_weights(G, pth.join(checkpoint_dir, "weights.%s" % epoch))
+            if (epoch % checkpoint_iter == 0):
+                print("-- saving check point")
+                tools.save_weights(G, pth.join(checkpoint_dir, "weights.%s" % epoch))
 
 
 
