@@ -187,8 +187,8 @@ def train(trn_data, tst_data=None):
                            split="TRN",
                         #    probs=str(results["probs"]),
                         #    labels=str(Y_trn),
-                           error_top1=float(1 - avg_step_acc),
-                           error_top5=float(1 - avg_step_acc_5),
+                           acc_top1=float(avg_step_acc),
+                           acc_top5=float(avg_step_acc_5),
                            loss=float(avg_step_loss))
 
             info = '\ntraining loss = %f, training accuracy = %f, lr = %f' \
@@ -203,14 +203,14 @@ def train(trn_data, tst_data=None):
             ops = [model[k] for k in sorted(model.keys())]
             results = tools.iterative_reduce(ops, inputs, args, batch_size=batch_size, fn=lambda x: np.mean(x, axis=0))
             results = dict(zip(sorted(model.keys()), results))
-            print("Test Epoch:%-5d, error_top1: %.4f, error_top5: %.4f, loss:%s" % (epoch,
-                                                                                 results["error_top1"],
-                                                                                 results["error_top5"],
-                                                                                 results["loss"]))
+            print("Test Epoch:%-5d, acc_top1: %.4f, acc_top5: %.4f, loss:%s" % (epoch,
+                                                                    1-results["error_top1"],
+                                                                    1-results["error_top5"],
+                                                                    results["loss"]))
             log.report(epoch=epoch,
                        split="TST",
-                       error_top1=float(results["error_top1"]),
-                       error_top5=float(results["error_top5"]),
+                       acc_top1=float(1-results["error_top1"]),
+                       acc_top5=float(1-results["error_top5"]),
                        loss=float(results["loss"]))
 
             if (epoch % checkpoint_iter == 0):
