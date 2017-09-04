@@ -187,8 +187,8 @@ def train(trn_data, tst_data=None):
                            split="TRN",
                         #    probs=str(results["probs"]),
                         #    labels=str(Y_trn),
-                           error_top1=float(avg_step_acc),
-                           error_top5=float(avg_step_acc_5),
+                           error_top1=float(1 - avg_step_acc),
+                           error_top5=float(1 - avg_step_acc_5),
                            loss=float(avg_step_loss))
 
             info = '\ntraining loss = %f, training accuracy = %f, lr = %f' \
