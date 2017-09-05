@@ -87,9 +87,10 @@ def train(trn_data, tst_data=None):
     # initialize and run training session
     # ===================================
     log = tools.StatLogger(train_log_fpath)
-    # config_proto = tf.ConfigProto(allow_soft_placement=True)
-    # sess = tf.Session(graph=G, config=config_proto)
-    sess = tf.Session(graph=G)
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.gpu_options.per_process_gpu_memory_fraction = 0.4
+    sess = tf.Session(graph=G, config = config)
     sess.run(init)
     # tf.train.start_queue_runners(sess=sess)
     with sess.as_default():
@@ -134,21 +135,22 @@ def train(trn_data, tst_data=None):
                 #                [(7,'t'), (8, 'tt'), (9, 'ttt')]]
                 # zip(*grad_workers):[((1, 't'), (4, 't'), (7, 't')), ((2, 'tt'), (5, 'tt'), (8, 'tt')),
                 #                ((3, 'ttt'), (6, 'ttt'), (9, 'ttt'))]
+                grad_workers = [pair for pair in zip(*grad_workers)]
                 # New Aggregation Strategy:
                 # Scale = exp(1 - v_i / mean(v_i))
-                grad_workers = [pair for pair in zip(*grad_workers)]
-                new_grad = []
-                for grad in grad_workers:
-                    variance = np.var(np.asarray(grad), axis=0)
-                    avg_variance = np.mean(variance)
-                    scale = np.divide(variance, avg_variance)
-                    final_scale = np.exp(1 - scale)
+                # new_grad = []
+                # for grad in grad_workers:
+                #     variance = np.var(np.asarray(grad), axis=0)
+                #     avg_variance = np.mean(variance)
+                #     scale = np.divide(variance, avg_variance)
+                #     final_scale = np.exp(1 - scale)
+                #
+                #     avg_grad = np.mean(np.asarray(grad), axis=0)
+                #     final_grad = np.multiply(final_scale, avg_grad)
+                #     new_grad.append(final_grad)
 
-                    avg_grad = np.mean(np.asarray(grad), axis=0)
-                    final_grad = np.multiply(final_scale, avg_grad)
-                    new_grad.append(final_grad)
-
-                # new_grad = [np.mean(np.asarray(grad), axis=0) for grad in grad_workers]
+                # Old Strategy: Average Aggregation
+                new_grad = [np.mean(np.asarray(grad), axis=0) for grad in grad_workers]
 
                 #################################################
                 # Run Gradients Updates
@@ -179,17 +181,18 @@ def train(trn_data, tst_data=None):
                 # total_acc += 1 - results["error_top1"]
 
                 tools.update_progress(step * 1.0 / steps_per_epoch,
-                                    'training loss = %f, accuracy = %f' % (avg_step_loss,
+                            'training loss = %f, accuracy = %f' % (avg_step_loss,
                                                             avg_step_acc))
 
-                log.report(epoch=epoch,
-                           step=step,
-                           split="TRN",
-                        #    probs=str(results["probs"]),
-                        #    labels=str(Y_trn),
-                           acc_top1=float(avg_step_acc),
-                           acc_top5=float(avg_step_acc_5),
-                           loss=float(avg_step_loss))
+                if(step % 10 == 0):
+                    log.report(epoch=epoch,
+                               step=step,
+                               split="TRN",
+                            #    probs=str(results["probs"]),
+                            #    labels=str(Y_trn),
+                               acc_top1=float(avg_step_acc),
+                               acc_top5=float(avg_step_acc_5),
+                               loss=float(avg_step_loss))
 
             info = '\ntraining loss = %f, training accuracy = %f, lr = %f' \
                 % (total_loss / steps_per_epoch, total_acc / steps_per_epoch, lr)
@@ -204,9 +207,9 @@ def train(trn_data, tst_data=None):
             results = tools.iterative_reduce(ops, inputs, args, batch_size=batch_size, fn=lambda x: np.mean(x, axis=0))
             results = dict(zip(sorted(model.keys()), results))
             print("Test Epoch:%-5d, acc_top1: %.4f, acc_top5: %.4f, loss:%s" % (epoch,
-                                                                    1-results["error_top1"],
-                                                                    1-results["error_top5"],
-                                                                    results["loss"]))
+                                                            1-results["error_top1"],
+                                                            1-results["error_top5"],
+                                                            results["loss"]))
             log.report(epoch=epoch,
                        split="TST",
                        acc_top1=float(1-results["error_top1"]),
