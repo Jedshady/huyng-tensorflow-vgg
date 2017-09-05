@@ -87,10 +87,10 @@ def train(trn_data, tst_data=None):
     # initialize and run training session
     # ===================================
     log = tools.StatLogger(train_log_fpath)
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    config.gpu_options.per_process_gpu_memory_fraction = 0.4
-    sess = tf.Session(graph=G, config = config)
+    config_proto = tf.ConfigProto()
+    config_proto.gpu_options.allow_growth = True
+    config_proto.gpu_options.per_process_gpu_memory_fraction = 0.4
+    sess = tf.Session(graph=G, config = config_proto)
     sess.run(init)
     # tf.train.start_queue_runners(sess=sess)
     with sess.as_default():
