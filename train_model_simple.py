@@ -164,15 +164,15 @@ def train(trn_data, tst_data=None):
                             'training loss = %f, accuracy = %f' % (avg_step_loss,
                                                             avg_step_acc))
 
-                if(step % 10 == 0):
-                    log.report(epoch=epoch,
-                               step=step,
-                               split="TRN",
-                            #    probs=str(results["probs"]),
-                            #    labels=str(Y_trn),
-                               acc_top1=float(avg_step_acc),
-                               acc_top5=float(avg_step_acc_5),
-                               loss=float(avg_step_loss))
+
+                log.report(epoch=epoch,
+                           step=step,
+                           split="TRN",
+                        #    probs=str(results["probs"]),
+                        #    labels=str(Y_trn),
+                           acc_top1=float(avg_step_acc),
+                           acc_top5=float(avg_step_acc_5),
+                           loss=float(avg_step_loss))
 
             info = '\ntraining loss = %f, training accuracy = %f, lr = %f' \
                 % (total_loss / steps_per_epoch, total_acc / steps_per_epoch, lr)
@@ -201,12 +201,17 @@ def train(trn_data, tst_data=None):
                 tools.save_weights(G, pth.join(checkpoint_dir, "weights.%s" % epoch))
 
 def vr_aggregation(grad_workers):
+    alpha = 0.01
     new_grad = []
     for grad in grad_workers:
         variance = np.var(np.asarray(grad), axis=0)
         avg_variance = np.mean(variance)
-        scale = np.divide(variance, avg_variance)
-        final_scale = np.exp(1 - scale)
+        if avg_variance == 0:
+            print("avg_variance is zero")
+            avg_variance = 1e-3
+        else:
+            scale = np.divide(variance, avg_variance)
+        final_scale = alpha * np.exp(1 - scale)
 
         avg_grad = np.mean(np.asarray(grad), axis=0)
         final_grad = np.multiply(final_scale, avg_grad)
