@@ -184,7 +184,7 @@ def train(trn_data, tst_data=None):
             inputs = [input_data_tensor, input_label_tensor, train_mode]
             args = [X_tst, Y_tst, False]
             ops = [model[k] for k in sorted(model.keys())]
-            results = tools.iterative_reduce(ops, inputs, args, batch_size=batch_size, fn=lambda x: np.mean(x, axis=0))
+            results = tools.iterative_reduce(ops, inputs, args, batch_size=200, fn=lambda x: np.mean(x, axis=0))
             results = dict(zip(sorted(model.keys()), results))
             print("Test Epoch:%-5d, acc_top1: %.4f, acc_top5: %.4f, loss:%s" % (epoch,
                                                             1-results["error_top1"],

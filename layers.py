@@ -13,10 +13,11 @@ def conv(input_tensor, name, kw, kh, n_out, dw=1, dh=1, activation_fn=tf.nn.relu
         weights = tf.get_variable('weights', [kh, kw, n_in, n_out], tf.float32, xavier_initializer())
         biases = tf.get_variable("bias", [n_out], tf.float32, tf.constant_initializer(0.0))
         conv = tf.nn.conv2d(input_tensor, weights, (1, dh, dw, 1), padding='SAME')
-        batch_mean, batch_var = tf.nn.moments(conv, [0])
-        conv_bn = tf.nn.batch_normalization(conv, batch_mean, batch_var,
-                                        0, 1, variance_epsilon=1e-3)
-        activation = activation_fn(tf.nn.bias_add(conv_bn, biases))
+        # batch_mean, batch_var = tf.nn.moments(conv, [0])
+        # conv_bn = tf.nn.batch_normalization(conv, batch_mean, batch_var,
+                                        # 0, 1, variance_epsilon=1e-3)
+        # activation = activation_fn(tf.nn.bias_add(conv_bn, biases))
+        activation = activation_fn(tf.nn.bias_add(conv, biases))
         return activation
 
 
