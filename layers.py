@@ -39,7 +39,7 @@ def pool(input_tensor, name, kh, kw, dh, dw):
     return tf.nn.max_pool(input_tensor,
                           ksize=[1, kh, kw, 1],
                           strides=[1, dh, dw, 1],
-                          padding='VALID',
+                          padding='SAME',
                           name=name)
 
 
