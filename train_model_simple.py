@@ -135,7 +135,7 @@ def train(trn_data, tst_data=None):
                     # print "###########################################"
                     # print grad_norm
                     # print "###########################################"
-                    print var
+                    # print var
                     print results[1]["logits"]
                     # print grad
                     # print "###########################################"
