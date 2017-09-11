@@ -133,8 +133,8 @@ def train(trn_data, tst_data=None):
                     # print "###########################################"
                     # print grad_norm
                     # print "###########################################"
-                    print var[-2]
-                    print grad[-2]
+                    print var
+                    print grad
                     # print "###########################################"
 
                     grad_workers.append([grad for grad in results[0]])
