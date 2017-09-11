@@ -30,19 +30,21 @@ def build_model(input_data_tensor, input_label_tensor, train_mode):
     images = input_data_tensor
 
     logits = vgg.build(images, n_classes=num_classes, training=train_mode)
-    probs = tf.nn.softmax(logits)
-    loss_classify = L.loss(logits, tf.one_hot(input_label_tensor, num_classes))
-    loss_weight_decay = tf.reduce_sum(tf.stack([tf.nn.l2_loss(i) for i in tf.get_collection('variables')]))
-    loss = loss_classify + weight_decay * loss_weight_decay
-    error_top5 = L.topK_error(probs, input_label_tensor, K=5)
-    error_top1 = L.topK_error(probs, input_label_tensor, K=1)
+    # probs = tf.nn.softmax(logits)
+    # loss_classify = L.loss(logits, tf.one_hot(input_label_tensor, num_classes))
+    # loss_weight_decay = tf.reduce_sum(tf.stack([tf.nn.l2_loss(i) for i in tf.get_collection('variables')]))
+    # loss = loss_classify + weight_decay * loss_weight_decay
+    # error_top5 = L.topK_error(probs, input_label_tensor, K=5)
+    # error_top1 = L.topK_error(probs, input_label_tensor, K=1)
 
     # you must return a dictionary with loss as a key, other variables
-    return dict(loss=loss,
-                probs=probs,
-                logits=logits,
-                error_top5=error_top5,
-                error_top1=error_top1)
+    return dict(
+                # loss=loss,
+                # probs=probs,
+                logits=logits
+                # error_top5=error_top5,
+                # error_top1=error_top1
+                )
 
 def train(trn_data, tst_data=None):
     learning_rate = config['learning_rate']
@@ -73,13 +75,13 @@ def train(trn_data, tst_data=None):
         model = build_model(input_data_tensor, input_label_tensor, train_mode)
         var_list = tf.trainable_variables()
         var_name_list = L.get_vars_name(var_list)
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate)
+        # optimizer = tf.train.GradientDescentOptimizer(learning_rate)
         # grads_and_vars = optimizer.compute_gradients(model["loss"])
-        grads = tf.gradients(model["loss"], var_list)
-        clipped_grads = [tf.clip_by_norm(grad, 1) for grad in grads]
-        aggregated_grads = [tf.placeholder(tf.float32, var.get_shape()) \
-                                    for var in var_list]
-        grad_step = optimizer.apply_gradients(zip(aggregated_grads, var_list))
+        # grads = tf.gradients(model["loss"], var_list)
+        # clipped_grads = [tf.clip_by_norm(grad, 1) for grad in grads]
+        # aggregated_grads = [tf.placeholder(tf.float32, var.get_shape()) \
+        #                             for var in var_list]
+        # grad_step = optimizer.apply_gradients(zip(aggregated_grads, var_list))
         # init = tf.initialize_all_variables()  # deprecated
         init = tf.global_variables_initializer()
 
@@ -121,27 +123,28 @@ def train(trn_data, tst_data=None):
                     micro_x_trn = X_trn[worker * micro_batch_size: (worker + 1) * micro_batch_size]
                     micro_y_trn = Y_trn[worker * micro_batch_size: (worker + 1) * micro_batch_size]
 
-                    ops = [clipped_grads, var_list] + [model[k] for k in sorted(model.keys())]
+                    ops = [var_list, model] + [model[k] for k in sorted(model.keys())]
                     inputs = {input_data_tensor: micro_x_trn, input_label_tensor: micro_y_trn,
                              learning_rate: lr, train_mode: True}
                     results = sess.run(ops, feed_dict=inputs)
 
-                    grad = zip(var_name_list, results[0])
-                    var = zip(var_name_list, results[1])
+                    # grad = zip(var_name_list, results[0])
+                    var = zip(var_name_list, results[0])
                     # grad_norm = [[name, np.linalg.norm(np.asarray(value))] for name, value in grad]
                     # var_norm = [[name, np.linalg.norm(np.asarray(value))] for name, value in var]
                     # print "###########################################"
                     # print grad_norm
                     # print "###########################################"
                     print var
-                    print grad
+                    print results[1]["logits"]
+                    # print grad
                     # print "###########################################"
 
-                    grad_workers.append([grad for grad in results[0]])
-                    results = dict(zip(sorted(model.keys()), results[2:]))
-                    step_loss += results["loss"]
-                    step_acc += 1 - results["error_top1"]
-                    step_acc_5 += 1 - results["error_top5"]
+                    # grad_workers.append([grad for grad in results[0]])
+                    # results = dict(zip(sorted(model.keys()), results[2:]))
+                    # step_loss += results["loss"]
+                    # step_acc += 1 - results["error_top1"]
+                    # step_acc_5 += 1 - results["error_top5"]
 
                 break
                 #################################################
