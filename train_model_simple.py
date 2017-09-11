@@ -71,6 +71,7 @@ def train(trn_data, tst_data=None):
         train_mode = tf.placeholder(tf.bool, name='train_mode_placeholder')
         model = build_model(input_data_tensor, input_label_tensor, train_mode)
         var_list = tf.trainable_variables()
+        var_name_list = L.get_vars_name(var_list)
         optimizer = tf.train.GradientDescentOptimizer(learning_rate)
         # grads_and_vars = optimizer.compute_gradients(model["loss"])
         grads = tf.gradients(model["loss"], var_list)
@@ -78,7 +79,7 @@ def train(trn_data, tst_data=None):
         aggregated_grads = [tf.placeholder(tf.float32, var.get_shape()) \
                                     for var in var_list]
         grad_step = optimizer.apply_gradients(zip(aggregated_grads, var_list))
-        # init = tf.initialize_all_variables()
+        # init = tf.initialize_all_variables()  # deprecated
         init = tf.global_variables_initializer()
 
 
@@ -99,11 +100,13 @@ def train(trn_data, tst_data=None):
 
         train_x = trn_data[0]
         train_y = trn_data[1]
+        np.random.seed(1234)
         idx = np.arange(num_samples_per_epoch, dtype=np.int32)
 
         for epoch in range(1, num_epochs+1):
             lr = 0.1 / float(1 << (epoch / 25))
             np.random.shuffle(idx)
+            print 'idx = %s' % idx
             total_loss, total_acc, total_acc_5 = 0.0, 0.0, 0.0
             print 'epoch %d' % epoch
             for step in range(steps_per_epoch):
@@ -117,12 +120,23 @@ def train(trn_data, tst_data=None):
                     micro_x_trn = X_trn[worker * micro_batch_size: (worker + 1) * micro_batch_size]
                     micro_y_trn = Y_trn[worker * micro_batch_size: (worker + 1) * micro_batch_size]
 
-                    ops = [clipped_grads] + [model[k] for k in sorted(model.keys())]
+                    ops = [clipped_grads, var_list] + [model[k] for k in sorted(model.keys())]
                     inputs = {input_data_tensor: micro_x_trn, input_label_tensor: micro_y_trn,
                              learning_rate: lr, train_mode: True}
                     results = sess.run(ops, feed_dict=inputs)
+
+                    # grad = zip(var_name_list, results[0])
+                    # var = zip(var_name_list, results[1])
+                    # grad_norm = [[name, np.linalg.norm(np.asarray(value))] for name, value in grad]
+                    # var_norm = [[name, np.linalg.norm(np.asarray(value))] for name, value in var]
+                    # print "###########################################"
+                    # print grad_norm
+                    # print "###########################################"
+                    # print var_norm
+                    # print "###########################################"
+
                     grad_workers.append([grad for grad in results[0]])
-                    results = dict(zip(sorted(model.keys()), results[1:]))
+                    results = dict(zip(sorted(model.keys()), results[2:]))
                     step_loss += results["loss"]
                     step_acc += 1 - results["error_top1"]
                     step_acc_5 += 1 - results["error_top5"]
@@ -142,6 +156,19 @@ def train(trn_data, tst_data=None):
 
                 # Old Strategy: Average Aggregation
                 new_grad = avg_aggregation(grad_workers)
+
+                # grad_with_name = zip(var_name_list, new_grad)
+                # print grad_with_name[-2]
+                # print "11111111111111111111111111111111111111111"
+
+                # ops = [clipped_grads, var_list] + [model[k] for k in sorted(model.keys())]
+                # inputs = {input_data_tensor: X_trn, input_label_tensor: Y_trn,
+                #          learning_rate: lr, train_mode: True}
+                # results = sess.run(ops, feed_dict=inputs)
+                #
+                # grad_with_name = zip(var_name_list, results[0])
+                # print grad_with_name[-2]
+                # print "22222222222222222222222222222222222222222"
 
                 #################################################
                 # Run Gradients Updates
@@ -164,6 +191,7 @@ def train(trn_data, tst_data=None):
                             'training loss = %f, accuracy = %f' % (avg_step_loss,
                                                             avg_step_acc))
 
+                # print str(results["probs"])
 
                 log.report(epoch=epoch,
                            step=step,
@@ -178,6 +206,9 @@ def train(trn_data, tst_data=None):
                 % (total_loss / steps_per_epoch, total_acc / steps_per_epoch, lr)
             print info
 
+            ########################################
+            # Test on Test split
+            ########################################
             print("-- running test on test split")
             X_tst = tst_data[0]
             Y_tst = tst_data[1]
@@ -196,9 +227,14 @@ def train(trn_data, tst_data=None):
                        acc_top5=float(1-results["error_top5"]),
                        loss=float(results["loss"]))
 
-            if (epoch % checkpoint_iter == 0):
-                print("-- saving check point")
-                tools.save_weights(G, pth.join(checkpoint_dir, "weights.%s" % epoch))
+            ########################################
+            # Save checkpoint
+            ########################################
+            # if (epoch % checkpoint_iter == 0):
+            #     print("-- saving check point")
+            #     tools.save_weights(G, pth.join(checkpoint_dir, "weights.%s" % epoch))
+
+
 
 def vr_aggregation(grad_workers):
     alpha = 0.01
