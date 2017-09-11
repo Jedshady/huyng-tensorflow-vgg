@@ -65,6 +65,7 @@ def train(trn_data, tst_data=None):
     # ========================
     G = tf.Graph()
     with G.as_default():
+        tf.set_random_seed(1234)
         input_data_tensor = tf.placeholder(tf.float32, [None] + data_dims, name='input_data_tensor')
         input_label_tensor = tf.placeholder(tf.int32, [None], name='input_label_tensor')
         learning_rate = tf.placeholder(tf.float32, name='lr_placeholder')
