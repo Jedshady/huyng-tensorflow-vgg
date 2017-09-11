@@ -125,14 +125,14 @@ def train(trn_data, tst_data=None):
                              learning_rate: lr, train_mode: True}
                     results = sess.run(ops, feed_dict=inputs)
 
-                    # grad = zip(var_name_list, results[0])
-                    var = zip(var_name_list, results[1])
+                    grad = zip(var_name_list, results[0])
+                    # var = zip(var_name_list, results[1])
                     # grad_norm = [[name, np.linalg.norm(np.asarray(value))] for name, value in grad]
                     # var_norm = [[name, np.linalg.norm(np.asarray(value))] for name, value in var]
                     # print "###########################################"
                     # print grad_norm
                     # print "###########################################"
-                    print var[-2]
+                    print grad[-2]
                     # print "###########################################"
 
                     grad_workers.append([grad for grad in results[0]])
