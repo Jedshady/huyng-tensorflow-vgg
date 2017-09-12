@@ -105,7 +105,7 @@ def train(trn_data, tst_data=None):
         idx = np.arange(num_samples_per_epoch, dtype=np.int32)
 
         for epoch in range(1, num_epochs+1):
-            lr = 0.01 / float(1 << (epoch / 25))
+            lr = 0.1 / float(1 << (epoch / 25))
             np.random.shuffle(idx)
             print 'idx = %s' % idx
             total_loss, total_acc, total_acc_5 = 0.0, 0.0, 0.0
@@ -164,19 +164,6 @@ def train(trn_data, tst_data=None):
                 # Old Strategy: Average Aggregation
                 new_grad = avg_aggregation(grad_workers)
 
-                # grad_with_name = zip(var_name_list, new_grad)
-                # print grad_with_name[-2]
-                # print "11111111111111111111111111111111111111111"
-
-                # ops = [clipped_grads, var_list] + [model[k] for k in sorted(model.keys())]
-                # inputs = {input_data_tensor: X_trn, input_label_tensor: Y_trn,
-                #          learning_rate: lr, train_mode: True}
-                # results = sess.run(ops, feed_dict=inputs)
-                #
-                # grad_with_name = zip(var_name_list, results[0])
-                # print grad_with_name[-2]
-                # print "22222222222222222222222222222222222222222"
-
                 #################################################
                 # Run Gradients Updates
                 #################################################
@@ -213,33 +200,33 @@ def train(trn_data, tst_data=None):
                 % (total_loss / steps_per_epoch, total_acc / steps_per_epoch, lr)
             print info
 
-            ########################################
+            # #######################################
             # Test on Test split
-            ########################################
-            # print("-- running test on test split")
-            # X_tst = tst_data[0]
-            # Y_tst = tst_data[1]
-            # inputs = [input_data_tensor, input_label_tensor, train_mode]
-            # args = [X_tst, Y_tst, False]
-            # ops = [model[k] for k in sorted(model.keys())]
-            # results = tools.iterative_reduce(ops, inputs, args, batch_size=200, fn=lambda x: np.mean(x, axis=0))
-            # results = dict(zip(sorted(model.keys()), results))
-            # print("Test Epoch:%-5d, acc_top1: %.4f, acc_top5: %.4f, loss:%s" % (epoch,
-            #                                                 1-results["error_top1"],
-            #                                                 1-results["error_top5"],
-            #                                                 results["loss"]))
-            # log.report(epoch=epoch,
-            #            split="TST",
-            #            acc_top1=float(1-results["error_top1"]),
-            #            acc_top5=float(1-results["error_top5"]),
-            #            loss=float(results["loss"]))
+            # #######################################
+            print("-- running test on test split")
+            X_tst = tst_data[0]
+            Y_tst = tst_data[1]
+            inputs = [input_data_tensor, input_label_tensor, train_mode]
+            args = [X_tst, Y_tst, False]
+            ops = [model[k] for k in sorted(model.keys())]
+            results = tools.iterative_reduce(ops, inputs, args, batch_size=200, fn=lambda x: np.mean(x, axis=0))
+            results = dict(zip(sorted(model.keys()), results))
+            print("Test Epoch:%-5d, acc_top1: %.4f, acc_top5: %.4f, loss:%s" % (epoch,
+                                                            1-results["error_top1"],
+                                                            1-results["error_top5"],
+                                                            results["loss"]))
+            log.report(epoch=epoch,
+                       split="TST",
+                       acc_top1=float(1-results["error_top1"]),
+                       acc_top5=float(1-results["error_top5"]),
+                       loss=float(results["loss"]))
 
-            ########################################
+            # #######################################
             # Save checkpoint
-            ########################################
-            # if (epoch % checkpoint_iter == 0):
-            #     print("-- saving check point")
-            #     tools.save_weights(G, pth.join(checkpoint_dir, "weights.%s" % epoch))
+            # #######################################
+            if (epoch % checkpoint_iter == 0):
+                print("-- saving check point")
+                tools.save_weights(G, pth.join(checkpoint_dir, "weights.%s" % epoch))
 
 
 
