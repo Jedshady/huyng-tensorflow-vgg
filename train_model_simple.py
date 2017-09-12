@@ -164,15 +164,15 @@ def train(trn_data, tst_data=None):
                             'training loss = %f, accuracy = %f' % (avg_step_loss,
                                                             avg_step_acc))
 
-                if(step % 10 == 0):
-                    log.report(epoch=epoch,
-                               step=step,
-                               split="TRN",
-                            #    probs=str(results["probs"]),
-                            #    labels=str(Y_trn),
-                               acc_top1=float(avg_step_acc),
-                               acc_top5=float(avg_step_acc_5),
-                               loss=float(avg_step_loss))
+
+                log.report(epoch=epoch,
+                           step=step,
+                           split="TRN",
+                        #    probs=str(results["probs"]),
+                        #    labels=str(Y_trn),
+                           acc_top1=float(avg_step_acc),
+                           acc_top5=float(avg_step_acc_5),
+                           loss=float(avg_step_loss))
 
             info = '\ntraining loss = %f, training accuracy = %f, lr = %f' \
                 % (total_loss / steps_per_epoch, total_acc / steps_per_epoch, lr)
