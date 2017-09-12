@@ -99,11 +99,13 @@ def train(trn_data, tst_data=None):
 
         train_x = trn_data[0]
         train_y = trn_data[1]
+        np.random.seed(1234)
         idx = np.arange(num_samples_per_epoch, dtype=np.int32)
 
         for epoch in range(1, num_epochs+1):
             lr = 0.1 / float(1 << (epoch / 25))
             np.random.shuffle(idx)
+            print 'idx = %s' % idx
             total_loss, total_acc, total_acc_5 = 0.0, 0.0, 0.0
             print 'epoch %d' % epoch
             for step in range(steps_per_epoch):
