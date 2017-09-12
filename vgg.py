@@ -49,27 +49,27 @@ def build(input_tensor, n_classes=1000, rgb_mean=None, training=True):
     net = L.conv(net, name="conv4_3", kh=3, kw=3, n_out=512)
     # net = tf.cond(training, lambda: tf.nn.dropout(net, keep_prob), lambda: net)
     net = L.pool(net, name="pool4", kh=2, kw=2, dh=2, dw=2)
-    #
-    # # block 5 -- outputs 7x7x512
-    # net = L.conv(net, name="conv5_1", kh=3, kw=3, n_out=512)
-    # # net = tf.cond(training, lambda: tf.nn.dropout(net, keep_prob), lambda: net)
-    # net = L.conv(net, name="conv5_2", kh=3, kw=3, n_out=512)
-    # # net = tf.cond(training, lambda: tf.nn.dropout(net, keep_prob), lambda: net)
-    # net = L.conv(net, name="conv5_3", kh=3, kw=3, n_out=512)
-    # # net = tf.cond(training, lambda: tf.nn.dropout(net, keep_prob), lambda: net)
-    # net = L.pool(net, name="pool5", kh=2, kw=2, dw=2, dh=2)
-    #
-    # # flatten
-    # flattened_shape = np.prod([s.value for s in net.get_shape()[1:]])
-    # net = tf.reshape(net, [-1, flattened_shape], name="flatten")
-    # # net = tf.cond(training, lambda: tf.nn.dropout(net, keep_prob), lambda: net)
-    #
-    # # fully connected
-    # net = L.fully_connected(net, name="fc6", n_out=512)
-    # # net = tf.cond(training, lambda: tf.nn.dropout(net, keep_prob), lambda: net)
-    # # net = L.fully_connected(net, name="fc7", n_out=4096)
-    # # net = tf.nn.dropout(net, keep_prob)
-    # net = L.fully_connected(net, name="fc7", n_out=n_classes)
+
+    # block 5 -- outputs 7x7x512
+    net = L.conv(net, name="conv5_1", kh=3, kw=3, n_out=512)
+    # net = tf.cond(training, lambda: tf.nn.dropout(net, keep_prob), lambda: net)
+    net = L.conv(net, name="conv5_2", kh=3, kw=3, n_out=512)
+    # net = tf.cond(training, lambda: tf.nn.dropout(net, keep_prob), lambda: net)
+    net = L.conv(net, name="conv5_3", kh=3, kw=3, n_out=512)
+    # net = tf.cond(training, lambda: tf.nn.dropout(net, keep_prob), lambda: net)
+    net = L.pool(net, name="pool5", kh=2, kw=2, dw=2, dh=2)
+
+    # flatten
+    flattened_shape = np.prod([s.value for s in net.get_shape()[1:]])
+    net = tf.reshape(net, [-1, flattened_shape], name="flatten")
+    # net = tf.cond(training, lambda: tf.nn.dropout(net, keep_prob), lambda: net)
+
+    # fully connected
+    net = L.fully_connected(net, name="fc6", n_out=512)
+    # net = tf.cond(training, lambda: tf.nn.dropout(net, keep_prob), lambda: net)
+    # net = L.fully_connected(net, name="fc7", n_out=4096)
+    # net = tf.nn.dropout(net, keep_prob)
+    net = L.fully_connected(net, name="fc7", n_out=n_classes)
     return net
 
 if __name__ == '__main__':
