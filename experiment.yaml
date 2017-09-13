@@ -4,11 +4,12 @@
 
 # number of gpus to use, this will be ignored if we're not using multi-gpu training
 num_gpus: 1
-num_epochs: 1
+# largest num_epochs 100
+num_epochs: 100
 num_samples_per_epoch: 50000
 
 # run validation every N steps
-vld_iter: 500
+# vld_iter: 500
 
 # checkpoints every N epochs
 checkpoint_iter: 50
@@ -19,13 +20,17 @@ checkpoint_dir: "exp1/checkpoints"
 # path to pre-trained weights to initialize model with before training
 pretrained_weights: null
 
-worker_number: 1
+# this should at least 4 or 5, better to be power of 2
+worker_number: 4
 
 # ============
 # model config
 # ============
-batch_size: 100
+# minibatch_size = micro_batch * worker_number
+microbatch_size: 50
 num_classes: 10
 learning_rate: 0.1
 data_dims: [32, 32, 3]
 weight_decay: 0.0005
+drop_out: False
+batch_normalization: False
