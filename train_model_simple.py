@@ -64,6 +64,7 @@ def train(trn_data, tst_data=None):
     # vld_iter = config["vld_iter"]
     checkpoint_iter = config["checkpoint_iter"]
     pretrained_weights = config.get("pretrained_weights", None)
+    agg_strategy = config.get("agg_strategy", 'AVG')
 
     # ========================
     # construct training graph
@@ -143,12 +144,15 @@ def train(trn_data, tst_data=None):
                 #                ((3, 'ttt'), (6, 'ttt'), (9, 'ttt'))]
                 grad_workers = [pair for pair in zip(*grad_workers)]
 
-                # New Aggregation Strategy:
-                # Scale = exp(1 - v_i / mean(v_i))
-                # new_grad = vr_aggregation(grad_workers)
-
-                # Old Strategy: Average Aggregation
-                new_grad = avg_aggregation(grad_workers)
+                if agg_strategy is 'AVG':
+                    # Old Strategy: Average Aggregation
+                    new_grad = avg_aggregation(grad_workers)
+                elif agg_strategy is 'VR':
+                    # New Aggregation Strategy:
+                    # Scale = exp(1 - v_i / mean(v_i))
+                    new_grad = vr_aggregation(grad_workers)
+                else:
+                    new_grad = avg_aggregation(grad_workers)
 
                 #################################################
                 # Run Gradients Updates

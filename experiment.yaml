@@ -29,3 +29,5 @@ num_classes: 10
 learning_rate: 0.1
 data_dims: [32, 32, 3]
 weight_decay: 0.0005
+
+agg_strategy: VR
