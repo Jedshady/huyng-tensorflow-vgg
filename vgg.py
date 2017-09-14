@@ -37,7 +37,7 @@ def build(input_tensor, n_classes=1000, rgb_mean=None, training=True):
     net = tf.cond(training, lambda: tf.nn.dropout(net, keep_prob), lambda: net)
     net = L.conv(net, name="conv3_2", kh=3, kw=3, n_out=256)
     net = tf.cond(training, lambda: tf.nn.dropout(net, keep_prob), lambda: net)
-    net = L.conv(net, name="conv3_2", kh=3, kw=3, n_out=256)
+    net = L.conv(net, name="conv3_3", kh=3, kw=3, n_out=256)
     net = L.pool(net, name="pool3", kh=2, kw=2, dh=2, dw=2)
 
     # block 4 -- outputs 14x14x512
