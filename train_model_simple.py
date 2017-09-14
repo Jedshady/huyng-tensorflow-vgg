@@ -22,14 +22,15 @@ config = {}
 
 # customize your model here
 # =========================
-def build_model(input_data_tensor, input_label_tensor, train_mode):
+def build_model(input_data_tensor, input_label_tensor, train_mode, drop_out, batch_norm):
     num_classes = config["num_classes"]
     weight_decay = config["weight_decay"]
 
     # images = tf.image.resize_images(input_data_tensor, [224, 224], method=0, align_corners=False)
     images = input_data_tensor
 
-    logits = vgg.build(images, n_classes=num_classes, training=train_mode)
+    logits = vgg.build(images, n_classes=num_classes, training=train_mode,
+                    drop_out=drop_out, batch_norm=batch_norm)
     probs = tf.nn.softmax(logits)
     loss_classify = L.loss(logits, tf.one_hot(input_label_tensor, num_classes))
     loss_weight_decay = tf.reduce_sum(tf.stack([tf.nn.l2_loss(i) for i in tf.get_collection('variables')]))
@@ -59,6 +60,8 @@ def train(trn_data, tst_data=None):
     checkpoint_iter = config["checkpoint_iter"]
     worker_number = config["worker_number"]
     pretrained_weights = config.get("pretrained_weights", None)
+    drop_out = config.get("drop_out", True)
+    batch_norm = config.get("batch_norm", True)
 
     # ========================
     # construct training graph
@@ -69,7 +72,8 @@ def train(trn_data, tst_data=None):
         input_label_tensor = tf.placeholder(tf.int32, [None], name='input_label_tensor')
         learning_rate = tf.placeholder(tf.float32, name='lr_placeholder')
         train_mode = tf.placeholder(tf.bool, name='train_mode_placeholder')
-        model = build_model(input_data_tensor, input_label_tensor, train_mode)
+        model = build_model(input_data_tensor, input_label_tensor, train_mode,
+                    drop_out, batch_norm)
         var_list = tf.trainable_variables()
         optimizer = tf.train.GradientDescentOptimizer(learning_rate)
         # grads_and_vars = optimizer.compute_gradients(model["loss"])

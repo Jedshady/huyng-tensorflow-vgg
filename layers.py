@@ -7,31 +7,35 @@ import tensorflow.python.platform
 import tensorflow as tf
 from tensorflow.contrib.layers import xavier_initializer
 
-def conv(input_tensor, name, kw, kh, n_out, dw=1, dh=1, activation_fn=tf.nn.relu):
+def conv(input_tensor, name, kw, kh, n_out, dw=1, dh=1, bn=True, activation_fn=tf.nn.relu):
     n_in = input_tensor.get_shape()[-1].value
     with tf.variable_scope(name):
         weights = tf.get_variable('weights', [kh, kw, n_in, n_out], tf.float32, xavier_initializer(seed=14))
         biases = tf.get_variable("bias", [n_out], tf.float32, tf.constant_initializer(0.0))
         conv = tf.nn.conv2d(input_tensor, weights, (1, dh, dw, 1), padding='SAME')
-        batch_mean, batch_var = tf.nn.moments(conv, [0])
-        conv_bn = tf.nn.batch_normalization(conv, batch_mean, batch_var,
-                                        0, 1, variance_epsilon=1e-3)
-        activation = activation_fn(tf.nn.bias_add(conv_bn, biases))
-        # activation = activation_fn(tf.nn.bias_add(conv, biases))
+        if bn:
+            batch_mean, batch_var = tf.nn.moments(conv, [0])
+            conv_bn = tf.nn.batch_normalization(conv, batch_mean, batch_var,
+                                            0, 1, variance_epsilon=1e-3)
+            activation = activation_fn(tf.nn.bias_add(conv_bn, biases))
+        else:
+            activation = activation_fn(tf.nn.bias_add(conv, biases))
         return activation
 
 
-def fully_connected(input_tensor, name, n_out, activation_fn=tf.nn.relu):
+def fully_connected(input_tensor, name, n_out, bn=True, activation_fn=tf.nn.relu):
     n_in = input_tensor.get_shape()[-1].value
     with tf.variable_scope(name):
         weights = tf.get_variable('weights', [n_in, n_out], tf.float32, xavier_initializer(seed=56))
         biases = tf.get_variable("bias", [n_out], tf.float32, tf.constant_initializer(0.0))
         full_mal = tf.matmul(input_tensor, weights)
-        batch_mean, batch_var = tf.nn.moments(full_mal, [0])
-        full_mal_bn = tf.nn.batch_normalization(full_mal, batch_mean, batch_var,
-                                            0, 1, variance_epsilon=1e-3)
-        logits = tf.nn.bias_add(full_mal_bn, biases)
-        # logits = tf.nn.bias_add(full_mal, biases)
+        if bn:
+            batch_mean, batch_var = tf.nn.moments(full_mal, [0])
+            full_mal_bn = tf.nn.batch_normalization(full_mal, batch_mean, batch_var,
+                                                0, 1, variance_epsilon=1e-3)
+            logits = tf.nn.bias_add(full_mal_bn, biases)
+        else:
+            logits = tf.nn.bias_add(full_mal, biases)
         return activation_fn(logits)
 
 
