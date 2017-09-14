@@ -78,7 +78,6 @@ def train(trn_data, tst_data=None):
         aggregated_grads = [tf.placeholder(tf.float32, var.get_shape()) \
                                     for var in var_list]
         grad_step = optimizer.apply_gradients(zip(aggregated_grads, var_list))
-        # init = tf.initialize_all_variables()
         init = tf.global_variables_initializer()
 
 
@@ -99,7 +98,7 @@ def train(trn_data, tst_data=None):
 
         train_x = trn_data[0]
         train_y = trn_data[1]
-        np.random.seed(1234)
+        np.random.seed(17)
         idx = np.arange(num_samples_per_epoch, dtype=np.int32)
 
         for epoch in range(1, num_epochs+1):
@@ -186,7 +185,7 @@ def train(trn_data, tst_data=None):
             inputs = [input_data_tensor, input_label_tensor, train_mode]
             args = [X_tst, Y_tst, False]
             ops = [model[k] for k in sorted(model.keys())]
-            results = tools.iterative_reduce(ops, inputs, args, batch_size=batch_size, fn=lambda x: np.mean(x, axis=0))
+            results = tools.iterative_reduce(ops, inputs, args, batch_size=200, fn=lambda x: np.mean(x, axis=0))
             results = dict(zip(sorted(model.keys()), results))
             print("Test Epoch:%-5d, acc_top1: %.4f, acc_top5: %.4f, loss:%s" % (epoch,
                                                             1-results["error_top1"],
