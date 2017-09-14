@@ -65,6 +65,7 @@ def train(trn_data, tst_data=None):
     checkpoint_iter = config["checkpoint_iter"]
     pretrained_weights = config.get("pretrained_weights", None)
     agg_strategy = config.get("agg_strategy", 'AVG')
+    need_compression = config.get("need_compression", False)
 
     # ========================
     # construct training graph
@@ -143,6 +144,15 @@ def train(trn_data, tst_data=None):
                 # zip(*grad_workers):[((1, 't'), (4, 't'), (7, 't')), ((2, 'tt'), (5, 'tt'), (8, 'tt')),
                 #                ((3, 'ttt'), (6, 'ttt'), (9, 'ttt'))]
                 grad_workers = [pair for pair in zip(*grad_workers)]
+                print grad_workers[-1]
+
+                if need_compression:
+                    sign_grad = [np.sign(np.asarray(grad)) for grad in grad_workers]
+                    compressed_grad_workers = L.grad_compression(grad_workers)
+                    restored_grad_workers = L.grad_restore(sign_grad, compressed_grad_workers)
+                    grad_workers = restored_grad_workers
+
+                print grad_workers[-1]
 
                 if agg_strategy is 'AVG':
                     # Old Strategy: Average Aggregation

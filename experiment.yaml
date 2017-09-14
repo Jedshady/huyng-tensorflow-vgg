@@ -31,3 +31,4 @@ data_dims: [32, 32, 3]
 weight_decay: 0.0005
 
 agg_strategy: VR
+need_compression: True

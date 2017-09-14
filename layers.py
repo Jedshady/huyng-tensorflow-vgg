@@ -68,6 +68,19 @@ def get_learning_rate(max_lr, worker_number, epoch, step, steps_per_epoch):
     else:
         return max_lr / 1000
 
+def grad_compression(grad_workers):
+    abs_grad = [np.absolute(np.asarray(grad)) for grad in grad_workers]
+    floor_log_grad = [np.floor(np.log(grad, where=(grad!=0))) for grad in abs_grad]
+    return floor_log_grad
+
+def grad_restore(sign_grad, compressed_grad_workers):
+    restored_grad = [np.exp(grad) for grad in compressed_grad_workers]
+    restored_sign_grad = []
+    for i in range(len(sign_grad)):
+        new_grad = np.multiply(sign_grad[i], restored_grad[i])
+        restored_sign_grad.append(new_grad)
+    return restored_sign_grad
+
 def average_gradients(grads):
     """Calculate the average gradient for each shared variable across all towers.
 
