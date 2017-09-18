@@ -225,9 +225,9 @@ def vr_aggregation(grad_workers):
     new_grad = []
     for grad in grad_workers:
         variance = np.var(np.asarray(grad), axis=0)
-        avg_variance = np.mean(variance)
-        scale = np.divide(variance, avg_variance)
-        final_scale = np.exp(1 - scale)
+        max_variance = np.matrix.max(variance)
+        scale = np.divide(variance, max_variance)
+        final_scale = np.exp(np.negative(scale))
 
         avg_grad = np.mean(np.asarray(grad), axis=0)
         final_grad = np.multiply(final_scale, avg_grad)
